@@ -24,7 +24,7 @@
             </button>
             </div>
             <!-- Botón corregido: mismo estilo que el Navbar -->
-            <button @click="handleAdd" class="relative flex items-center gap-1.5 bg-gradient-to-r from-[#E94E1B] to-[#F4A261] text-white px-4 py-2 rounded-xl font-medium text-sm hover:shadow-lg transition-shadow">
+            <button @click="handleAdd" class="relative flex items-center gap-2 bg-gradient-to-r from-[#E94E1B] to-[#F4A261] text-white px-5 py-3 min-w-[160px] rounded-xl font-semibold text-sm justify-center hover:shadow-lg transition-shadow">
                 <ShoppingCart class="w-4 h-4" />
                 Agregar
             </button>

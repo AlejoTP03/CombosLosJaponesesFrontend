@@ -2,7 +2,7 @@
 <template>
     <div>
         <!-- Hero Section -->
-        <section class="relative bg-gradient-to-br from-gray-50 to-orange-50 overflow-hidden">
+        <section v-motion="fadeUp" class="relative bg-gradient-to-br from-gray-50 to-orange-50 overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -41,7 +41,7 @@
         </section>
 
         <!-- Products Section -->
-        <section id="products" class="py-16 bg-white">
+        <section id="products" v-motion="fadeUp" class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
             <h2 class="text-3xl font-bold text-gray-900 mb-4">Nuestros Productos</h2>
@@ -59,7 +59,7 @@
         </section>
 
         <!-- Combos Section -->
-        <section id="combos" class="py-16 bg-gray-50">
+        <section id="combos" v-motion="fadeUp" class="py-16 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
             <span class="inline-flex items-center gap-2 bg-gradient-to-r from-[#E94E1B] to-[#F4A261] text-white px-4 py-1.5 rounded-full text-sm font-medium mb-4">Ahorra mas</span>
@@ -108,6 +108,11 @@ const features = [
     { icon: Zap, title: 'Entrega Rapida', desc: 'Envios a toda la provincia de Sancti Spiritus.', color: 'from-[#2E7D9A] to-[#4a9eb8]' },
     { icon: DollarSign, title: 'Mejores Precios', desc: 'Combos con descuentos especiales para tu bolsillo.', color: 'from-[#F4A261] to-[#e9c46a]' },
 ];
+
+const fadeUp = {
+    initial: { opacity: 0, y: 40 },
+    enter: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+};
 
 const scrollTo = (id: string) => {
     const el = document.getElementById(id);

@@ -29,6 +29,27 @@ export function useApi() {
     const config = useRuntimeConfig();
     const API_BASE = config.public.apiBase;
 
+    const normalizeApiResponse = (data: any, keys: string[]) => {
+        if (!data) return [];
+        for (const key of keys) {
+        if (data[key]) return data[key];
+        }
+        return Array.isArray(data) ? data : [];
+    };
+
+    const normalizeImageUrl = (item: any) => {
+        if (!item || !item.image) return item;
+        const backendBase = API_BASE.replace(/\/api\/?$/, '');
+        const image = String(item.image || '');
+        if (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:')) {
+        return item;
+        }
+        return {
+        ...item,
+        image: `${backendBase}${image.startsWith('/') ? '' : '/'}${image}`,
+        };
+    };
+
     onMounted(async () => {
         try {
         const [productsRes, combosRes] = await Promise.all([
@@ -40,8 +61,11 @@ export function useApi() {
             throw new Error('Error al cargar datos');
         }
 
-        products.value = await productsRes.json();
-        combos.value = await combosRes.json();
+        const productsData = await productsRes.json();
+        const combosData = await combosRes.json();
+
+        products.value = normalizeApiResponse(productsData, ['Productos', 'productos', 'products']).map(normalizeImageUrl);
+        combos.value = normalizeApiResponse(combosData, ['Combos', 'combos', 'combos']).map(normalizeImageUrl);
         } catch (err: any) {
         error.value = err.message;
         // Datos demo como fallback (igual que el proyecto original)
