@@ -33,7 +33,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3001/api",
-      whatsappNumber: process.env.NUXT_PUBLIC_WHATSAPP_NUMBER || "53500460",
+      whatsappNumber: process.env.NUXT_PUBLIC_WHATSAPP_NUMBER || "53530460",
     },
   },
 
