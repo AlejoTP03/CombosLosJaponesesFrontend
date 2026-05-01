@@ -12,6 +12,14 @@ export default defineNuxtConfig({
 
   css: ["~/assets/css/main.css"],
 
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        types: ["node"]
+      }
+    }
+  },
+
   vite: {
     plugins: [tailwindcss()],
 
@@ -25,7 +33,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3001/api",
-      whatsappNumber: process.env.NUXT_PUBLIC_WHATSAPP_NUMBER || "5351234567",
+      whatsappNumber: process.env.NUXT_PUBLIC_WHATSAPP_NUMBER || "53500460",
     },
   },
 

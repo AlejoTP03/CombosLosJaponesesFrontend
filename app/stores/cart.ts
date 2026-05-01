@@ -24,18 +24,23 @@ export const useCartStore = defineStore('cart', () => {
     const combos = ref<CartCombo[]>([]);
 
     // Cargar del localStorage al iniciar (solo en cliente)
-    if (import.meta.client) {
-        const saved = localStorage.getItem('cart-storage');
-        if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            items.value = parsed.items || [];
-            combos.value = parsed.combos || [];
-        } catch (e) {
-            console.error('Error parsing cart from localStorage', e);
+    const loadFromStorage = () => {
+        if (import.meta.client) {
+            const saved = localStorage.getItem('cart-storage');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    items.value = parsed.items || [];
+                    combos.value = parsed.combos || [];
+                } catch (e) {
+                    console.error('Error parsing cart from localStorage', e);
+                }
+            }
         }
-        }
-}
+    };
+
+    // Llamar al cargar el store
+    loadFromStorage();
 
   // Guardar en localStorage cada vez que cambie
 function persist() {

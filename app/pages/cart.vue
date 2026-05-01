@@ -145,19 +145,42 @@
                 </div>
                 </div>
 
+                <!-- Mensajes de error y éxito -->
+                <div v-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl text-sm">
+                    {{ errorMessage }}
+                </div>
+                <div v-if="successMessage" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl text-sm">
+                    {{ successMessage }}
+                </div>
+
+                <!-- Debug: Mostrar por qué está bloqueado (solo si está bloqueado) -->
+                <div v-if="!isFormValid" class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-xl text-xs">
+                    <p><strong>Por qué está bloqueado:</strong></p>
+                    <ul class="list-disc ml-4 mt-1">
+                        <li v-if="!(cartStore.items.length > 0 || cartStore.combos.length > 0)">❌ Carrito vacío (agrega productos o combos)</li>
+                        <li v-if="!form.recipientName">❌ Falta: Nombre del destinatario</li>
+                        <li v-if="!form.phone">❌ Falta: Número de contacto</li>
+                        <li v-if="!municipality">❌ Falta: Selecciona un municipio</li>
+                        <li v-if="!form.address">❌ Falta: Dirección de entrega</li>
+                        <li v-if="!form.paymentMethod">❌ Falta: Método de pago</li>
+                    </ul>
+                </div>
+
                 <!-- Botón de WhatsApp con icono personalizado -->
                 <button 
-                    type="submit" 
+                    type="submit"
                     class="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-                    :disabled="!isFormValid"
+                    :disabled="!isFormValid || isLoading"
                 >
+                    <span v-if="isLoading" class="inline-block animate-spin">⏳</span>
                     <img 
+                        v-if="!isLoading"
                         src="/whatsapp.jpg" 
                         alt="WhatsApp" 
                         class="w-5 h-5 object-contain"
                         @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
                     />
-                    Realizar Pedido por WhatsApp
+                    {{ isLoading ? 'Procesando...' : 'Realizar Pedido por WhatsApp' }}
                 </button>
                 <p class="text-xs text-gray-400 text-center">Seras redirigido a WhatsApp con el resumen de tu pedido.</p>
             </form>
@@ -171,6 +194,7 @@
 import { ref, computed } from 'vue';
 import { Minus, Plus, Trash2, ShoppingCart, ChevronRight } from 'lucide-vue-next';
 import { useCartStore } from '~/stores/cart';
+import { Input, Textarea, Label } from '../components/ui';
 
 const cartStore = useCartStore();
 const totalItems = computed(() => cartStore.totalItems);
@@ -195,17 +219,30 @@ const form = ref({
     paymentMethod: '',
 });
 
+const isLoading = ref(false);
+const errorMessage = ref('');
+const successMessage = ref('');
+
 const shippingCost = computed(() => municipalities.find(m => m.value === municipality.value)?.cost || 0);
 const total = computed(() => subtotal.value + shippingCost.value);
 
 const config = useRuntimeConfig();
+const apiBase = config.public.apiBase;
 const whatsappNumber = config.public.whatsappNumber;
 
 const isFormValid = computed(() => {
-    return form.value.recipientName && form.value.phone && municipality.value && form.value.address && form.value.paymentMethod;
+    return !!(
+        cartStore.items.length > 0 || cartStore.combos.length > 0
+    ) && !!(
+        form.value.recipientName && 
+        form.value.phone && 
+        municipality.value && 
+        form.value.address && 
+        form.value.paymentMethod
+    );
 });
 
-const handleSubmit = () => {
+const generateWhatsAppMessage = () => {
     let message = `*NUEVO PEDIDO - Combos Los Japoneses*%0A%0A`;
 
     if (cartStore.items.length > 0) {
@@ -233,6 +270,79 @@ const handleSubmit = () => {
     message += `Direccion: ${form.value.address}%0A`;
     message += `Metodo de pago: ${form.value.paymentMethod}`;
 
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    return message;
+};
+
+const handleSubmit = async () => {
+    errorMessage.value = '';
+    successMessage.value = '';
+    isLoading.value = true;
+
+    try {
+        // Validar que hay items en el carrito
+        if (!cartStore.items.length && !cartStore.combos.length) {
+            throw new Error('El carrito está vacío');
+        }
+
+        // Preparar datos del pedido
+        const orderData = {
+            recipientName: form.value.recipientName,
+            phone: form.value.phone,
+            municipality: municipality.value,
+            address: form.value.address,
+            paymentMethod: form.value.paymentMethod,
+            subtotal: subtotal.value,
+            shippingCost: shippingCost.value,
+            total: total.value,
+            items: cartStore.items.map(item => ({
+                id: item.id,
+                quantity: item.quantity,
+                price: item.price
+            })),
+            combos: cartStore.combos.map(combo => ({
+                id: combo.id,
+                quantity: combo.quantity,
+                price: combo.price
+            }))
+        };
+
+        // Crear el pedido en la BD
+        const response = await fetch(`${apiBase}/orders`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(orderData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al crear el pedido');
+        }
+
+        const result = await response.json();
+        
+        // Mostrar mensaje de éxito
+        successMessage.value = '✅ Pedido creado exitosamente. Se abrirá WhatsApp para confirmar...';
+        
+        // Esperar un momento y luego abrir WhatsApp
+        setTimeout(() => {
+            const message = generateWhatsAppMessage();
+            window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+            
+            // Limpiar el carrito después de crear el pedido
+            setTimeout(() => {
+                cartStore.clearCart();
+                form.value = { recipientName: '', phone: '', address: '', paymentMethod: '' };
+                municipality.value = '';
+                successMessage.value = '';
+            }, 500);
+        }, 1500);
+
+    } catch (error: any) {
+        errorMessage.value = `❌ ${error.message || 'Error al procesar el pedido'}`;
+    } finally {
+        isLoading.value = false;
+    }
 };
 </script>
